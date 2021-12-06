@@ -24,3 +24,19 @@ impl TidList {
 		&mut self.tids[..]
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	#[test]
+	fn test_no_duplicates() {
+		let mut list = super::TidList::new();
+		
+		assert!(list.tids.is_empty());
+		
+		for i in 0..10 {
+			list.push(super::types::Tid(i));
+			assert!(list.tids.last().unwrap().0 == i);
+			assert!(list.tids.len() == (i + 1) as usize);
+		}
+	}
+}

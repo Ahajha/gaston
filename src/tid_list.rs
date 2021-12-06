@@ -11,12 +11,10 @@ impl TidList {
 	
 	pub fn push(&mut self, tid: types::Tid) {
 		match self.tids.last() {
-			Some(last_tid) => {
-				if last_tid.0 != tid.0 {
-					self.tids.push(tid);
-				}
-			},
-			_ => ()
+			// If the last item is the same as the new item, ignore it
+			Some(last_tid) if last_tid.0 == tid.0 => (),
+			// If empty or different last item, add it
+			_ => self.tids.push(tid)
 		}
 	}
 	

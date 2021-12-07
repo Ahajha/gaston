@@ -68,14 +68,15 @@ pub struct Database {
 }
 
 impl Database {
-	fn read(filename: &str) -> Database {
-		Database {
+	fn read(filename: &str) -> std::io::Result<Database> {
+		
+		Ok(Database {
 			trees: Vec::new(),
 			node_labels: Vec::new(),
 			edge_labels: Vec::new(),
 			largest_n_nodes: 0,
 			largest_n_edges: 0,
 			edge_labels_indexes: Vec::new(),
-		}
+		})
 	}
 }

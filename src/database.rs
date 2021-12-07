@@ -66,3 +66,16 @@ pub struct Database {
 	pub largest_n_edges: u32,
 	pub edge_labels_indexes: Vec<types::EdgeLabel>,
 }
+
+impl Database {
+	fn read(filename: &str) -> Database {
+		Database {
+			trees: Vec::new(),
+			node_labels: Vec::new(),
+			edge_labels: Vec::new(),
+			largest_n_nodes: 0,
+			largest_n_edges: 0,
+			edge_labels_indexes: Vec::new(),
+		}
+	}
+}

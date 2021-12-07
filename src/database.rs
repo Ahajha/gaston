@@ -12,16 +12,16 @@ pub struct DatabaseTreeEdge {
 
 pub struct DatabaseTreeNode {
 	pub nodelabel: types::NodeLabel,
-	//pub edges: &'a [DatabaseTreeEdge], // This is giving lifetime issues that I still need to solve
+	pub edges: Vec<DatabaseTreeEdge>,
 	pub mark: types::PatternMask, // Might not want these two here
 	pub startmark: types::PatternMask,
 }
 
 impl DatabaseTreeNode {
-	pub fn new(nodelabel: types::NodeLabel /*, edges: &[DatabaseTreeEdge] */) -> DatabaseTreeNode {
+	pub fn new(nodelabel: types::NodeLabel , edges: Vec<DatabaseTreeEdge>) -> DatabaseTreeNode {
 		DatabaseTreeNode {
 			nodelabel,
-			//edges,
+			edges,
 			mark: types::PatternMask(1),
 			startmark: types::PatternMask(1)
 		}
@@ -31,12 +31,11 @@ impl DatabaseTreeNode {
 pub struct DatabaseTree {
 	pub tid: types::Tid,
 	pub nodes: Vec<DatabaseTreeNode>,
-	edges: Vec<DatabaseTreeEdge>, // May eventually convert to a Box<[DatabaseTreeEdge]>
 }
 
 impl DatabaseTree {
 	pub fn new(tid: types::Tid) -> DatabaseTree {
-		DatabaseTree { tid, nodes: Vec::new(), edges: Vec::new() }
+		DatabaseTree { tid, nodes: Vec::new() }
 	}
 }
 

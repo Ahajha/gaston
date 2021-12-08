@@ -67,8 +67,27 @@ pub struct Database {
 	pub edge_labels_indexes: Vec<types::EdgeLabel>,
 }
 
+#[derive(Debug)]
+pub enum DatabaseError {
+	IOError(std::io::Error),
+}
+
+impl std::fmt::Display for DatabaseError {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		match self {
+			Self::IOError(err) => write!(f, "{}", err),
+		}
+	}
+}
+
+impl std::convert::From<std::io::Error> for DatabaseError {
+	fn from(err: std::io::Error) -> Self {
+		Self::IOError(err)
+	}
+}
+
 impl Database {
-	fn read(filename: &str) -> std::io::Result<Database> {
+	pub fn read(filename: &str) -> Result<Database, DatabaseError> {
 		
 		Ok(Database {
 			trees: Vec::new(),

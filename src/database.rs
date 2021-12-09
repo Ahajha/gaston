@@ -128,6 +128,9 @@ impl Database {
 		
 		match token_iterator.next() {
 			Some("t") => {
+				// Errors here would be useless, so just skip the next token
+				token_iterator.next();
+				
 				let tid = token_iterator
 					.next()
 					.ok_or(DatabaseError::IncompleteGraphCommand)?

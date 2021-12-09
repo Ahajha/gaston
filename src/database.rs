@@ -69,12 +69,22 @@ pub struct Database {
 
 #[derive(Debug)]
 pub enum DatabaseError {
+	IncompleteGraphCommand,
+	IncompleteNodeCommand,
+	IncompleteEdgeCommand,
+	UnknownCommand(String),
+	ParseError(std::num::ParseIntError),
 	IOError(std::io::Error),
 }
 
 impl std::fmt::Display for DatabaseError {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		match self {
+			Self::IncompleteGraphCommand => write!(f, "Incomplete graph, requires \"t # [id]\""),
+			Self::IncompleteNodeCommand => write!(f, "Incomplete node, requires \"v [id] [label]"),
+			Self::IncompleteEdgeCommand => write!(f, "Incomplete edge, requires \"e [nodeid1] [nodeid2] [label]\""),
+			Self::UnknownCommand(tok) => write!(f, "Unknown command \"{}\", expected t, v, or e", tok),
+			Self::ParseError(err) => write!(f, "{}", err),
 			Self::IOError(err) => write!(f, "{}", err),
 		}
 	}
@@ -84,6 +94,18 @@ impl std::convert::From<std::io::Error> for DatabaseError {
 	fn from(err: std::io::Error) -> Self {
 		Self::IOError(err)
 	}
+}
+
+impl std::convert::From<std::num::ParseIntError> for DatabaseError {
+	fn from(err: std::num::ParseIntError) -> Self {
+		Self::ParseError(err)
+	}
+}
+
+enum Command {
+	Graph(types::Tid),
+	Node(InputNodeId, InputNodeLabel),
+	Edge(InputNodeId, InputNodeId, InputEdgeLabel),
 }
 
 impl Database {
@@ -97,5 +119,64 @@ impl Database {
 			largest_n_edges: 0,
 			edge_labels_indexes: Vec::new(),
 		})
+	}
+	
+	// Returns an optional command (no command if the line is empty) parsed
+	// from line.
+	fn read_command(line: &str) -> Result<Option<Command>, DatabaseError> {
+		let mut token_iterator = line.split_whitespace();
+		
+		match token_iterator.next() {
+			Some("t") => {
+				let tid = token_iterator
+					.next()
+					.ok_or(DatabaseError::IncompleteGraphCommand)?
+					.parse()?;
+				
+				Ok(Some(Command::Graph(
+					types::Tid(tid)
+				)))
+			},
+			Some("v") => {
+				let id = token_iterator
+					.next()
+					.ok_or(DatabaseError::IncompleteNodeCommand)?
+					.parse()?;
+				
+				let label = token_iterator
+					.next()
+					.ok_or(DatabaseError::IncompleteNodeCommand)?
+					.parse()?;
+				
+				Ok(Some(Command::Node(
+					InputNodeId(id),
+					InputNodeLabel(label)
+				)))
+			},
+			Some("e") => {
+				let nodeid1 = token_iterator
+					.next()
+					.ok_or(DatabaseError::IncompleteEdgeCommand)?
+					.parse()?;
+				
+				let nodeid2 = token_iterator
+					.next()
+					.ok_or(DatabaseError::IncompleteEdgeCommand)?
+					.parse()?;
+				
+				let label = token_iterator
+					.next()
+					.ok_or(DatabaseError::IncompleteEdgeCommand)?
+					.parse()?;
+				
+				Ok(Some(Command::Edge(
+					InputNodeId(nodeid1),
+					InputNodeId(nodeid2),
+					InputEdgeLabel(label)
+				)))
+			},
+			Some(tok) => Err(DatabaseError::UnknownCommand(tok.to_owned())),
+			None => Ok(None),
+		}
 	}
 }

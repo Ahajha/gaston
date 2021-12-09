@@ -1,8 +1,11 @@
 use crate::types;
 use crate::tid_list;
 
+#[derive(std::cmp::PartialEq, Debug)]
 pub struct InputEdgeLabel(i16);
+#[derive(std::cmp::PartialEq, Debug)]
 pub struct InputNodeLabel(i16);
+#[derive(std::cmp::PartialEq, Debug)]
 pub struct InputNodeId(i16);
 
 pub struct DatabaseTreeEdge {
@@ -83,7 +86,7 @@ impl std::fmt::Display for DatabaseError {
 			Self::IncompleteGraphCommand(line_no) =>
 				write!(f, "line {}: Incomplete graph, requires \"t # [id]\"", line_no),
 			Self::IncompleteNodeCommand(line_no) =>
-				write!(f, "line {}: Incomplete node, requires \"v [id] [label]", line_no),
+				write!(f, "line {}: Incomplete node, requires \"v [id] [label]\"", line_no),
 			Self::IncompleteEdgeCommand(line_no) =>
 				write!(f, "line {}: Incomplete edge, requires \"e [nodeid1] [nodeid2] [label]\"", line_no),
 			Self::UnknownCommand(line_no, tok) =>
@@ -102,6 +105,7 @@ impl std::convert::From<std::io::Error> for DatabaseError {
 	}
 }
 
+#[derive(std::cmp::PartialEq, Debug)]
 enum Command {
 	Graph(types::Tid),
 	Node(InputNodeId, InputNodeLabel),
@@ -187,5 +191,122 @@ impl Database {
 			Some(tok) => Err(DatabaseError::UnknownCommand(line_no, tok.to_owned())),
 			None => Ok(None),
 		}
+	}
+}
+
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	
+	#[test]
+	fn test_valid_commands() {
+		let result = Database::read_command((0, "t # 5"));
+		assert_eq!(result.unwrap(), Some(Command::Graph(types::Tid(5))));
+		
+		let result = Database::read_command((0, "v 5 6"));
+		assert_eq!(result.unwrap(), Some(Command::Node(InputNodeId(5), InputNodeLabel(6))));
+		
+		let result = Database::read_command((0, "e 1 0 2"));
+		assert_eq!(result.unwrap(), Some(Command::Edge(
+			InputNodeId(1), InputNodeId(0), InputEdgeLabel(2)
+		)));
+		
+		let result = Database::read_command((0, ""));
+		assert!(result.unwrap().is_none());
+	}
+	
+	#[test]
+	fn test_unknown_command() {
+		let err = Database::read_command((10, "w 4 50")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::UnknownCommand(line_no, tok)
+			if line_no == &10 && tok == "w"
+		));
+		
+		let msg = err.to_string();
+		assert_eq!(msg, "line 10: Unknown command \"w\", expected t, v, or e");
+	}
+	
+	#[test]
+	fn test_incomplete_commands() {
+		// Incomplete graph commands
+		let err = Database::read_command((15, "t")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::IncompleteGraphCommand(line_no)
+			if line_no == &15
+		));
+		
+		let err = Database::read_command((18, "t #")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::IncompleteGraphCommand(line_no)
+			if line_no == &18
+		));
+		
+		let msg = err.to_string();
+		assert_eq!(msg, "line 18: Incomplete graph, requires \"t # [id]\"");
+		
+		// Incomplete node commands
+		let err = Database::read_command((23, "v")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::IncompleteNodeCommand(line_no)
+			if line_no == &23
+		));
+		
+		let err = Database::read_command((27, "v 0")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::IncompleteNodeCommand(line_no)
+			if line_no == &27
+		));
+		
+		let msg = err.to_string();
+		assert_eq!(msg, "line 27: Incomplete node, requires \"v [id] [label]\"");
+		
+		// Incomplete edge commands
+		let err = Database::read_command((34, "e")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::IncompleteEdgeCommand(line_no)
+			if line_no == &34
+		));
+		
+		let err = Database::read_command((36, "e 0")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::IncompleteEdgeCommand(line_no)
+			if line_no == &36
+		));
+		
+		let err = Database::read_command((39, "e 0 12")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::IncompleteEdgeCommand(line_no)
+			if line_no == &39
+		));
+		
+		let msg = err.to_string();
+		assert_eq!(msg, "line 39: Incomplete edge, requires \"e [nodeid1] [nodeid2] [label]\"");
+	}
+	
+	#[test]
+	fn test_parse_errors() {
+		let err = Database::read_command((1, "t # thing")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::ParseError(line_no, _)
+			if line_no == &1
+		));
+		
+		let err = Database::read_command((5, "v sauce")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::ParseError(line_no, _)
+			if line_no == &5
+		));
+		
+		let err = Database::read_command((12, "v 45 x")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::ParseError(line_no, _)
+			if line_no == &12
+		));
+		
+		let err = Database::read_command((34, "e $$&&@*#&*($@")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::ParseError(line_no, _)
+			if line_no == &34
+		));
+		
+		let err = Database::read_command((54, "e 45 *")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::ParseError(line_no, _)
+			if line_no == &54
+		));
+		
+		let err = Database::read_command((154, "e 0 0 ()")).unwrap_err();
+		assert!(matches!(&err, DatabaseError::ParseError(line_no, _)
+			if line_no == &154
+		));
 	}
 }

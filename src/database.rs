@@ -125,6 +125,17 @@ impl Database {
 		})
 	}
 	
+	// Returns the next token from iter. Returns err if there is no token, or a ParseIntError
+	// if parsing fails.
+	fn parse_token<T>(iter: &mut std::str::SplitWhitespace, line_no: u32, err: DatabaseError)
+		-> Result<T, DatabaseError>
+		where T: std::str::FromStr<Err = std::num::ParseIntError> {
+		iter.next()
+		    .ok_or(err)?
+		    .parse()
+		    .map_err(|e| DatabaseError::ParseError(line_no, e))
+	}
+	
 	// Returns an optional command (no command if the line is empty) parsed
 	// from line.
 	fn read_command((line_no, line): (u32, &str)) -> Result<Option<Command>, DatabaseError> {
@@ -135,28 +146,19 @@ impl Database {
 				// Errors here would be useless, so just skip the next token
 				token_iterator.next();
 				
-				let tid = token_iterator
-					.next()
-					.ok_or(DatabaseError::IncompleteGraphCommand(line_no))?
-					.parse()
-					.map_err(|e| DatabaseError::ParseError(line_no, e))?;
+				let tid = Self::parse_token(&mut token_iterator,
+					line_no, DatabaseError::IncompleteGraphCommand(line_no))?;
 				
 				Ok(Some(Command::Graph(
 					types::Tid(tid)
 				)))
 			},
 			Some("v") => {
-				let id = token_iterator
-					.next()
-					.ok_or(DatabaseError::IncompleteNodeCommand(line_no))?
-					.parse()
-					.map_err(|e| DatabaseError::ParseError(line_no, e))?;
+				let id = Self::parse_token(&mut token_iterator,
+					line_no, DatabaseError::IncompleteNodeCommand(line_no))?;
 				
-				let label = token_iterator
-					.next()
-					.ok_or(DatabaseError::IncompleteNodeCommand(line_no))?
-					.parse()
-					.map_err(|e| DatabaseError::ParseError(line_no, e))?;
+				let label = Self::parse_token(&mut token_iterator,
+					line_no, DatabaseError::IncompleteNodeCommand(line_no))?;
 				
 				Ok(Some(Command::Node(
 					InputNodeId(id),
@@ -164,23 +166,14 @@ impl Database {
 				)))
 			},
 			Some("e") => {
-				let nodeid1 = token_iterator
-					.next()
-					.ok_or(DatabaseError::IncompleteEdgeCommand(line_no))?
-					.parse()
-					.map_err(|e| DatabaseError::ParseError(line_no, e))?;
+				let nodeid1 = Self::parse_token(&mut token_iterator,
+					line_no, DatabaseError::IncompleteEdgeCommand(line_no))?;
 				
-				let nodeid2 = token_iterator
-					.next()
-					.ok_or(DatabaseError::IncompleteEdgeCommand(line_no))?
-					.parse()
-					.map_err(|e| DatabaseError::ParseError(line_no, e))?;
+				let nodeid2 = Self::parse_token(&mut token_iterator,
+					line_no, DatabaseError::IncompleteEdgeCommand(line_no))?;
 				
-				let label = token_iterator
-					.next()
-					.ok_or(DatabaseError::IncompleteEdgeCommand(line_no))?
-					.parse()
-					.map_err(|e| DatabaseError::ParseError(line_no, e))?;
+				let label = Self::parse_token(&mut token_iterator,
+					line_no, DatabaseError::IncompleteEdgeCommand(line_no))?;
 				
 				Ok(Some(Command::Edge(
 					InputNodeId(nodeid1),
@@ -193,7 +186,6 @@ impl Database {
 		}
 	}
 }
-
 
 #[cfg(test)]
 mod tests {

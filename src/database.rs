@@ -1,6 +1,8 @@
 use crate::types;
 use crate::tid_list;
 
+use std::io::BufRead;
+
 #[derive(std::cmp::PartialEq, Debug)]
 pub struct InputEdgeLabel(i16);
 #[derive(std::cmp::PartialEq, Debug)]
@@ -72,11 +74,11 @@ pub struct Database {
 
 #[derive(Debug)]
 pub enum DatabaseError {
-	IncompleteGraphCommand(u32),
-	IncompleteNodeCommand(u32),
-	IncompleteEdgeCommand(u32),
-	UnknownCommand(u32, String),
-	ParseError(u32, std::num::ParseIntError),
+	IncompleteGraphCommand(usize),
+	IncompleteNodeCommand(usize),
+	IncompleteEdgeCommand(usize),
+	UnknownCommand(usize, String),
+	ParseError(usize, std::num::ParseIntError),
 	IOError(std::io::Error),
 }
 
@@ -127,7 +129,7 @@ impl Database {
 	
 	// Returns the next token from iter. Returns err if there is no token, or a ParseIntError
 	// if parsing fails.
-	fn parse_token<T>(iter: &mut std::str::SplitWhitespace, line_no: u32, err: DatabaseError)
+	fn parse_token<T>(iter: &mut std::str::SplitWhitespace, line_no: usize, err: DatabaseError)
 		-> Result<T, DatabaseError>
 		where T: std::str::FromStr<Err = std::num::ParseIntError> {
 		iter.next()
@@ -138,7 +140,7 @@ impl Database {
 	
 	// Returns an optional command (no command if the line is empty) parsed
 	// from line.
-	fn read_command((line_no, line): (u32, &str)) -> Result<Option<Command>, DatabaseError> {
+	fn read_command((line_no, line): (usize, &str)) -> Result<Option<Command>, DatabaseError> {
 		let mut token_iterator = line.split_whitespace();
 		
 		match token_iterator.next() {

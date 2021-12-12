@@ -79,8 +79,9 @@ pub enum DatabaseError {
 	IncompleteEdgeCommand(usize),
 	UnknownCommand(usize, String),
 	InvalidFirstLine,
-	ParseError(usize, std::num::ParseIntError),
 	InvalidTid(usize, types::Tid, usize),
+	InvalidNodeId(usize, InputNodeId, usize),
+	ParseError(usize, std::num::ParseIntError),
 	IOError(std::io::Error),
 }
 
@@ -97,6 +98,8 @@ impl std::fmt::Display for DatabaseError {
 				write!(f, "line {}: Unknown command \"{}\", expected t, v, or e", line_no, tok),
 			Self::InvalidTid(line_no, given, expected) =>
 				write!(f, "line {}: Expected graph id {}, was given {} instead. (graph ids should be given in ascending order from 0)", line_no, expected, given.0),
+			Self::InvalidNodeId(line_no, given, expected) =>
+				write!(f, "line {}: Expected node id {}, was given {} instead. (node ids should be given in ascending order from 0)", line_no, expected, given.0),
 			Self::InvalidFirstLine =>
 				write!(f, "First line should be \"t # 0\""),
 			Self::ParseError(line_no, err) =>
@@ -150,11 +153,17 @@ impl Database {
 					
 					trees.push(RawInputGraph { nodes: Vec::new(), edges: Vec::new() } );
 				},
-				Some(Command::Node(_, label)) => {
-					trees.last_mut()
-					     .ok_or(DatabaseError::InvalidFirstLine)?
-					     .nodes
-					     .push(RawInputNode { label });
+				Some(Command::Node(id, label)) => {
+					let mut nodes =
+						&mut trees.last_mut()
+				    	          .ok_or(DatabaseError::InvalidFirstLine)?
+						          .nodes;
+					
+					if id.0 as usize != nodes.len() {
+						return Err(DatabaseError::InvalidNodeId(line_no, id, nodes.len()));
+					}
+					
+					nodes.push(RawInputNode { label });
 				},
 				Some(Command::Edge(id1, id2, label)) => {
 					trees.last_mut()

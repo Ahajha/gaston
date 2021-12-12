@@ -78,7 +78,9 @@ pub enum DatabaseError {
 	IncompleteNodeCommand(usize),
 	IncompleteEdgeCommand(usize),
 	UnknownCommand(usize, String),
+	InvalidFirstLine,
 	ParseError(usize, std::num::ParseIntError),
+	InvalidTid(usize, types::Tid, usize),
 	IOError(std::io::Error),
 }
 
@@ -93,6 +95,10 @@ impl std::fmt::Display for DatabaseError {
 				write!(f, "line {}: Incomplete edge, requires \"e [nodeid1] [nodeid2] [label]\"", line_no),
 			Self::UnknownCommand(line_no, tok) =>
 				write!(f, "line {}: Unknown command \"{}\", expected t, v, or e", line_no, tok),
+			Self::InvalidTid(line_no, given, expected) =>
+				write!(f, "line {}: Expected graph id {}, was given {} instead. (graph ids should be given in ascending order from 0)", line_no, expected, given.0),
+			Self::InvalidFirstLine =>
+				write!(f, "First line should be \"t # 0\""),
 			Self::ParseError(line_no, err) =>
 				write!(f, "line {}: {}", line_no, err),
 			Self::IOError(err) =>
@@ -114,8 +120,51 @@ enum Command {
 	Edge(InputNodeId, InputNodeId, InputEdgeLabel),
 }
 
+struct RawInputNode {
+	label: InputNodeLabel,
+}
+
+struct RawInputEdge {
+	from: InputNodeId,
+	to:   InputNodeId,
+	label: InputEdgeLabel,
+}
+
+struct RawInputGraph {
+	nodes: Vec<RawInputNode>,
+	edges: Vec<RawInputEdge>,
+}
+
 impl Database {
 	pub fn read(filename: &str) -> Result<Database, DatabaseError> {
+		let reader = std::io::BufReader::new(std::fs::File::open(filename)?);
+		
+		let mut trees = Vec::new();
+		
+		for (line_no, line) in reader.lines().enumerate().map(|(n,l)| (n+1,l)) {
+			match Self::read_command((line_no, &line?))? {
+				Some(Command::Graph(tid)) => {
+					if tid.0 as usize != trees.len() {
+						return Err(DatabaseError::InvalidTid(line_no, tid, trees.len()));
+					}
+					
+					trees.push(RawInputGraph { nodes: Vec::new(), edges: Vec::new() } );
+				},
+				Some(Command::Node(_, label)) => {
+					trees.last_mut()
+					     .ok_or(DatabaseError::InvalidFirstLine)?
+					     .nodes
+					     .push(RawInputNode { label });
+				},
+				Some(Command::Edge(id1, id2, label)) => {
+					trees.last_mut()
+					     .ok_or(DatabaseError::InvalidFirstLine)?
+					     .edges
+					     .push(RawInputEdge { from: id1, to: id2, label });
+				},
+				None => ()
+			}
+		}
 		
 		Ok(Database {
 			trees: Vec::new(),

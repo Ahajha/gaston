@@ -156,7 +156,7 @@ impl Database {
 				Some(Command::Node(id, label)) => {
 					let mut nodes =
 						&mut trees.last_mut()
-				    	          .ok_or(DatabaseError::InvalidFirstLine)?
+						          .ok_or(DatabaseError::InvalidFirstLine)?
 						          .nodes;
 					
 					if id.0 as usize != nodes.len() {

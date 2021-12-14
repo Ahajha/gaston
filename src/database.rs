@@ -81,6 +81,7 @@ pub enum DatabaseError {
 	InvalidFirstLine,
 	InvalidTid(usize, types::Tid, usize),
 	InvalidNodeId(usize, InputNodeId, usize),
+	UnknownNodeId(usize, InputNodeId, usize),
 	ParseError(usize, std::num::ParseIntError),
 	IOError(std::io::Error),
 }
@@ -100,6 +101,8 @@ impl std::fmt::Display for DatabaseError {
 				write!(f, "line {}: Expected graph id {}, was given {} instead. (graph ids should be given in ascending order from 0)", line_no, expected, given.0),
 			Self::InvalidNodeId(line_no, given, expected) =>
 				write!(f, "line {}: Expected node id {}, was given {} instead. (node ids should be given in ascending order from 0)", line_no, expected, given.0),
+			Self::UnknownNodeId(line_no, given, maximum) =>
+				write!(f, "line {}: Id {} out of range, maximum vertex id is {}", line_no, given.0, maximum),
 			Self::InvalidFirstLine =>
 				write!(f, "First line should be \"t # 0\""),
 			Self::ParseError(line_no, err) =>
@@ -142,6 +145,20 @@ impl Database {
 	pub fn read(filename: &str) -> Result<Database, DatabaseError> {
 		let reader = std::io::BufReader::new(std::fs::File::open(filename)?);
 		
+		let mut trees = Self::parse_input(reader)?;
+		
+		Ok(Database {
+			trees: Vec::new(),
+			node_labels: Vec::new(),
+			edge_labels: Vec::new(),
+			largest_n_nodes: 0,
+			largest_n_edges: 0,
+			edge_labels_indexes: Vec::new(),
+		})
+	}
+	
+	fn parse_input<R: std::io::Read>(reader: std::io::BufReader<R>)
+		-> Result<Vec<RawInputGraph>, DatabaseError> {
 		let mut trees = Vec::new();
 		
 		for (line_no, line) in reader.lines().enumerate().map(|(n,l)| (n+1,l)) {
@@ -154,10 +171,8 @@ impl Database {
 					trees.push(RawInputGraph { nodes: Vec::new(), edges: Vec::new() } );
 				},
 				Some(Command::Node(id, label)) => {
-					let mut nodes =
-						&mut trees.last_mut()
-						          .ok_or(DatabaseError::InvalidFirstLine)?
-						          .nodes;
+					let nodes =
+						&mut trees.last_mut().ok_or(DatabaseError::InvalidFirstLine)?.nodes;
 					
 					if id.0 as usize != nodes.len() {
 						return Err(DatabaseError::InvalidNodeId(line_no, id, nodes.len()));
@@ -166,23 +181,24 @@ impl Database {
 					nodes.push(RawInputNode { label });
 				},
 				Some(Command::Edge(id1, id2, label)) => {
-					trees.last_mut()
-					     .ok_or(DatabaseError::InvalidFirstLine)?
-					     .edges
-					     .push(RawInputEdge { from: id1, to: id2, label });
+					let last_graph = &mut trees.last_mut().ok_or(DatabaseError::InvalidFirstLine)?;
+					
+					let n_verts = last_graph.nodes.len();
+					
+					if id1.0 as usize >= n_verts {
+						return Err(DatabaseError::UnknownNodeId(line_no, id1, n_verts));
+					}
+					if id2.0 as usize >= n_verts {
+						return Err(DatabaseError::UnknownNodeId(line_no, id2, n_verts));
+					}
+					
+					last_graph.edges.push(RawInputEdge { from: id1, to: id2, label });
 				},
 				None => ()
 			}
 		}
 		
-		Ok(Database {
-			trees: Vec::new(),
-			node_labels: Vec::new(),
-			edge_labels: Vec::new(),
-			largest_n_nodes: 0,
-			largest_n_edges: 0,
-			edge_labels_indexes: Vec::new(),
-		})
+		Ok(trees)
 	}
 	
 	// Returns the next token from iter. Returns err if there is no token, or a ParseIntError

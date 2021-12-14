@@ -157,10 +157,7 @@ impl Database {
 					trees.push(RawInputGraph { nodes: Vec::new(), edges: Vec::new() } );
 				},
 				Some(Command::Node(id, label)) => {
-					let mut nodes =
-						&mut trees.last_mut()
-				    	          .ok_or(DatabaseError::InvalidFirstLine)?
-						          .nodes;
+					let nodes = &mut trees.last_mut().ok_or(DatabaseError::InvalidFirstLine)?.nodes;
 					
 					if id.0 as usize != nodes.len() {
 						return Err(DatabaseError::InvalidNodeId(line_no, id, nodes.len()));
@@ -169,7 +166,7 @@ impl Database {
 					nodes.push(RawInputNode { label });
 				},
 				Some(Command::Edge(id1, id2, label)) => {
-					let mut last_graph = &mut trees.last_mut().ok_or(DatabaseError::InvalidFirstLine)?;
+					let last_graph = &mut trees.last_mut().ok_or(DatabaseError::InvalidFirstLine)?;
 					
 					let n_verts = last_graph.nodes.len();
 					

@@ -126,16 +126,19 @@ enum Command {
 	Edge(InputNodeId, InputNodeId, InputEdgeLabel),
 }
 
+#[derive(Debug)]
 struct RawInputNode {
 	label: InputNodeLabel,
 }
 
+#[derive(Debug)]
 struct RawInputEdge {
 	from: InputNodeId,
 	to:   InputNodeId,
 	label: InputEdgeLabel,
 }
 
+#[derive(Debug)]
 struct RawInputGraph {
 	nodes: Vec<RawInputNode>,
 	edges: Vec<RawInputEdge>,
@@ -375,6 +378,49 @@ mod tests {
 		let err = Database::read_command((154, "e 0 0 ()")).unwrap_err();
 		assert!(matches!(&err, DatabaseError::ParseError(line_no, _)
 			if line_no == &154
+		));
+	}
+	
+	#[test]
+	fn test_parse_input_errors() {
+		use std::io::BufReader;
+		use DatabaseError::*;
+		
+		let err = Database::parse_input(BufReader::new("v 0 0".as_bytes())).unwrap_err();
+		assert!(matches!(&err, InvalidFirstLine));
+		
+		let err = Database::parse_input(BufReader::new("e 0 0 0".as_bytes())).unwrap_err();
+		assert!(matches!(&err, InvalidFirstLine));
+		
+		let err = Database::parse_input(BufReader::new("t".as_bytes())).unwrap_err();
+		assert!(matches!(&err, IncompleteGraphCommand(line_no)
+			if line_no == &1
+		));
+		
+		let s = "t # 0\n\
+		         v 1 15\n\
+		         v 3 4\n";
+		let err = Database::parse_input(BufReader::new(s.as_bytes())).unwrap_err();		
+		assert!(matches!(&err, InvalidNodeId(line_no, given, size)
+			if line_no == &2 && given.0 == 1 && size == &0
+		));
+		
+		let s = "t # 0\n\
+		         v 0 15\n\
+		         v 1 4\n\
+		         e 0 2 5";
+		let err = Database::parse_input(BufReader::new(s.as_bytes())).unwrap_err();		
+		assert!(matches!(&err, UnknownNodeId(line_no, given, size)
+			if line_no == &4 && given.0 == 2 && size == &2
+		));
+		
+		let s = "t # 0\n\
+		         v 0 15\n\
+		         v 1 4\n\
+		         t 0 7";
+		let err = Database::parse_input(BufReader::new(s.as_bytes())).unwrap_err();		
+		assert!(matches!(&err, InvalidTid(line_no, given, size)
+			if line_no == &4 && given.0 == 7 && size == &1
 		));
 	}
 }

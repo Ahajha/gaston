@@ -126,19 +126,19 @@ enum Command {
 	Edge(InputNodeId, InputNodeId, InputEdgeLabel),
 }
 
-#[derive(Debug)]
+#[derive(std::cmp::PartialEq, Debug)]
 struct RawInputNode {
 	label: InputNodeLabel,
 }
 
-#[derive(Debug)]
+#[derive(std::cmp::PartialEq, Debug)]
 struct RawInputEdge {
 	from: InputNodeId,
 	to:   InputNodeId,
 	label: InputEdgeLabel,
 }
 
-#[derive(Debug)]
+#[derive(std::cmp::PartialEq, Debug)]
 struct RawInputGraph {
 	nodes: Vec<RawInputNode>,
 	edges: Vec<RawInputEdge>,
@@ -422,5 +422,137 @@ mod tests {
 		assert!(matches!(&err, InvalidTid(line_no, given, size)
 			if line_no == &4 && given.0 == 7 && size == &1
 		));
+	}
+	
+	#[test]
+	fn test_parse_input() {
+		use std::io::BufReader;
+		
+		let s = "";
+		let result = Database::parse_input(BufReader::new(s.as_bytes())).unwrap();
+		assert!(result.is_empty());
+		
+		let s = "t # 0";
+		let result = Database::parse_input(BufReader::new(s.as_bytes())).unwrap();
+		assert_eq!(result, vec![
+			RawInputGraph {
+				nodes: Vec::new(),
+				edges: Vec::new(),
+			}
+		]);
+		
+		let s = "t # 0\n\
+		         v 0 15\n\
+		         v 1 4\n
+		         e 1 0 2";
+		let result = Database::parse_input(BufReader::new(s.as_bytes())).unwrap();
+		assert_eq!(result, vec![
+			RawInputGraph {
+				nodes: vec![
+					RawInputNode { label: InputNodeLabel(15) },
+					RawInputNode { label: InputNodeLabel(4)  },
+				],
+				edges: vec![
+					RawInputEdge {
+						from: InputNodeId(1), to: InputNodeId(0), label: InputEdgeLabel(2)
+					},
+				],
+			},
+		]);
+		
+		let s = "t # 0\n\
+		         v 0 15\n\
+		         v 1 4\n
+		         e 1 0 2\n\
+		         t # 1\n\
+		         v 0 4\n\
+		         v 1 15\n\
+		         v 2 9\n\
+		         v 3 4\n\
+		         e 3 0 8\n\
+		         e 2 3 8\n\
+		         e 0 1 2\n\
+		         e 0 2 4\n\
+		         t # 2\n\
+		         v 0 1\n\
+		         v 1 2\n\
+		         v 2 3\n\
+		         v 3 4\n\
+		         v 4 5\n\
+		         v 5 6\n\
+		         v 6 7\n\
+		         e 0 1 2\n\
+		         e 1 2 3\n\
+		         e 2 3 4\n\
+		         e 3 4 5\n\
+		         e 4 5 6\n\
+		         e 5 6 7\n";
+		let result = Database::parse_input(BufReader::new(s.as_bytes())).unwrap();
+		assert_eq!(result, vec![
+			RawInputGraph {
+				nodes: vec![
+					RawInputNode { label: InputNodeLabel(15) },
+					RawInputNode { label: InputNodeLabel(4)  },
+				],
+				edges: vec![
+					RawInputEdge {
+						from: InputNodeId(1), to: InputNodeId(0), label: InputEdgeLabel(2)
+					},
+				],
+			},
+			RawInputGraph {
+				nodes: vec![
+					RawInputNode { label: InputNodeLabel(4)  },
+					RawInputNode { label: InputNodeLabel(15) },
+					RawInputNode { label: InputNodeLabel(9)  },
+					RawInputNode { label: InputNodeLabel(4)  },
+				],
+				edges: vec![
+					RawInputEdge {
+						from: InputNodeId(3), to: InputNodeId(0), label: InputEdgeLabel(8)
+					},
+					RawInputEdge {
+						from: InputNodeId(2), to: InputNodeId(3), label: InputEdgeLabel(8)
+					},
+					RawInputEdge {
+						from: InputNodeId(0), to: InputNodeId(1), label: InputEdgeLabel(2)
+					},
+					RawInputEdge {
+						from: InputNodeId(0), to: InputNodeId(2), label: InputEdgeLabel(4)
+					},
+				],
+			},
+			RawInputGraph {
+				nodes: vec![
+					RawInputNode { label: InputNodeLabel(1) },
+					RawInputNode { label: InputNodeLabel(2) },
+					RawInputNode { label: InputNodeLabel(3) },
+					RawInputNode { label: InputNodeLabel(4) },
+					RawInputNode { label: InputNodeLabel(5) },
+					RawInputNode { label: InputNodeLabel(6) },
+					RawInputNode { label: InputNodeLabel(7) },
+				],
+				edges: vec![
+					RawInputEdge {
+						from: InputNodeId(0), to: InputNodeId(1), label: InputEdgeLabel(2)
+					},
+					RawInputEdge {
+						from: InputNodeId(1), to: InputNodeId(2), label: InputEdgeLabel(3)
+					},
+					RawInputEdge {
+						from: InputNodeId(2), to: InputNodeId(3), label: InputEdgeLabel(4)
+					},
+					RawInputEdge {
+						from: InputNodeId(3), to: InputNodeId(4), label: InputEdgeLabel(5)
+					},
+					RawInputEdge {
+						from: InputNodeId(4), to: InputNodeId(5), label: InputEdgeLabel(6)
+					},
+					RawInputEdge {
+						from: InputNodeId(5), to: InputNodeId(6), label: InputEdgeLabel(7)
+					},
+				],
+			},
+		]);
 	}
 }

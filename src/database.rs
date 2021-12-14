@@ -145,6 +145,20 @@ impl Database {
 	pub fn read(filename: &str) -> Result<Database, DatabaseError> {
 		let reader = std::io::BufReader::new(std::fs::File::open(filename)?);
 		
+		let mut trees = Self::parse_input(reader)?;
+		
+		Ok(Database {
+			trees: Vec::new(),
+			node_labels: Vec::new(),
+			edge_labels: Vec::new(),
+			largest_n_nodes: 0,
+			largest_n_edges: 0,
+			edge_labels_indexes: Vec::new(),
+		})
+	}
+	
+	fn parse_input<R: std::io::Read>(reader: std::io::BufReader<R>)
+		-> Result<Vec<RawInputGraph>, DatabaseError> {
 		let mut trees = Vec::new();
 		
 		for (line_no, line) in reader.lines().enumerate().map(|(n,l)| (n+1,l)) {
@@ -183,14 +197,7 @@ impl Database {
 			}
 		}
 		
-		Ok(Database {
-			trees: Vec::new(),
-			node_labels: Vec::new(),
-			edge_labels: Vec::new(),
-			largest_n_nodes: 0,
-			largest_n_edges: 0,
-			edge_labels_indexes: Vec::new(),
-		})
+		Ok(trees)
 	}
 	
 	// Returns the next token from iter. Returns err if there is no token, or a ParseIntError

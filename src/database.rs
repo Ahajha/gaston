@@ -2,10 +2,11 @@ use crate::types;
 use crate::tid_list;
 
 use std::io::BufRead;
+use std::collections::HashMap;
 
 #[derive(std::cmp::PartialEq, Debug)]
 pub struct InputEdgeLabel(i16);
-#[derive(std::cmp::PartialEq, Debug)]
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Hash, Copy, Clone, Debug)]
 pub struct InputNodeLabel(i16);
 #[derive(std::cmp::PartialEq, Debug)]
 pub struct InputNodeId(i16);
@@ -50,6 +51,14 @@ pub struct DatabaseNodeLabel {
 	pub occurrence_count: types::Frequency,
 	pub frequent_edge_labels: Vec<types::EdgeLabel>,
 	last_tid: types::Tid, // Would like to remove, is only used while reading
+}
+
+// Used as an intermediate form before being converted to a DatabaseNodeLabel
+struct ProtoDatabaseNodeLabel {
+	frequency: types::Frequency,
+	occurrence_count: types::Frequency,
+	frequent_edge_labels: Vec<types::EdgeLabel>,
+	last_tid: usize,
 }
 
 pub struct DatabaseEdgeLabel {
@@ -202,6 +211,27 @@ impl Database {
 		}
 		
 		Ok(trees)
+	}
+	
+	fn determine_frequent_labels(trees: &[RawInputGraph]) {
+		let mut node_labels = HashMap::new();
+		
+		for (tid, tree) in trees.iter().enumerate() {
+			for node in &tree.nodes {
+				let node_label = node_labels.entry(node.label)
+				                            .or_insert(ProtoDatabaseNodeLabel {
+					frequency: types::Frequency(0),
+					occurrence_count: types::Frequency(0),
+					frequent_edge_labels: Vec::new(),
+					last_tid: tid,
+				});
+				//node_label.occurrence_count += 1;
+				if node_label.last_tid != tid {
+					//node_label.frequency += 1;
+					node_label.last_tid = tid;
+				}
+			}
+		}
 	}
 	
 	// Returns the next token from iter. Returns err if there is no token, or a ParseIntError

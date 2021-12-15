@@ -4,7 +4,7 @@ use crate::tid_list;
 use std::io::BufRead;
 use std::collections::HashMap;
 
-#[derive(std::cmp::PartialEq, Debug)]
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Hash, Copy, Clone, Debug)]
 pub struct InputEdgeLabel(i16);
 #[derive(std::cmp::PartialEq, std::cmp::Eq, Hash, Copy, Clone, Debug)]
 pub struct InputNodeLabel(i16);
@@ -70,6 +70,14 @@ pub struct DatabaseEdgeLabel {
 	pub occurrence_count: types::Frequency,
 	pub tid_list: tid_list::TidList,
 	last_tid: types::Tid, // similar
+}
+
+// Used as an intermediate form before being converted to a DatabaseEdgeLabel
+struct ProtoDatabaseEdgeLabel {
+	frequency: types::Frequency,
+	occurrence_count: types::Frequency,
+	tid_list: tid_list::TidList,
+	last_tid: usize,
 }
 
 pub struct Database {
@@ -215,6 +223,7 @@ impl Database {
 	
 	fn determine_frequent_labels(trees: &[RawInputGraph]) {
 		let mut node_labels = HashMap::new();
+		let mut edge_labels = HashMap::new();
 		
 		for (tid, tree) in trees.iter().enumerate() {
 			for node in &tree.nodes {
@@ -229,6 +238,28 @@ impl Database {
 				if node_label.last_tid != tid {
 					node_label.frequency += 1;
 					node_label.last_tid = tid;
+				}
+			}
+			
+			for edge in &tree.edges {
+				let node_label1 = tree.nodes[edge.from.0 as usize].label;
+				let node_label2 = tree.nodes[edge.to  .0 as usize].label;
+				let (large, small) = if node_label1.0 > node_label2.0 
+						{ (node_label1.0, node_label2.0) }
+					else
+						{ (node_label2.0, node_label1.0) };
+				
+				let edge_label = edge_labels.entry((large, edge.label, small))
+				                            .or_insert_with(|| ProtoDatabaseEdgeLabel {
+					frequency: 0,
+					occurrence_count: 0,
+					tid_list: tid_list::TidList::new(),
+					last_tid: tid,
+				});
+				edge_label.occurrence_count += 1;
+				if edge_label.last_tid != tid {
+					edge_label.frequency += 1;
+					edge_label.last_tid = tid;
 				}
 			}
 		}

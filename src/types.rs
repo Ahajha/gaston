@@ -4,7 +4,7 @@ pub struct NodeId(pub u16);
 pub struct Depth(pub u32);
 #[derive(std::cmp::PartialEq, Debug)]
 pub struct Tid(pub u16);
-pub struct Frequency(pub u32);
+pub type Frequency = u32;
 pub struct PatternMask(pub u32);
 
 pub const NO_TID: Tid = Tid(u16::MAX);

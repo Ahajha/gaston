@@ -220,14 +220,14 @@ impl Database {
 			for node in &tree.nodes {
 				let node_label = node_labels.entry(node.label)
 				                            .or_insert(ProtoDatabaseNodeLabel {
-					frequency: types::Frequency(0),
-					occurrence_count: types::Frequency(0),
+					frequency: 0,
+					occurrence_count: 0,
 					frequent_edge_labels: Vec::new(),
 					last_tid: tid,
 				});
-				//node_label.occurrence_count += 1;
+				node_label.occurrence_count += 1;
 				if node_label.last_tid != tid {
-					//node_label.frequency += 1;
+					node_label.frequency += 1;
 					node_label.last_tid = tid;
 				}
 			}

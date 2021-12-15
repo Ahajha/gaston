@@ -219,7 +219,7 @@ impl Database {
 		for (tid, tree) in trees.iter().enumerate() {
 			for node in &tree.nodes {
 				let node_label = node_labels.entry(node.label)
-				                            .or_insert(ProtoDatabaseNodeLabel {
+				                            .or_insert_with(|| ProtoDatabaseNodeLabel {
 					frequency: 0,
 					occurrence_count: 0,
 					frequent_edge_labels: Vec::new(),

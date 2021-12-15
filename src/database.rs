@@ -167,6 +167,8 @@ impl Database {
 		
 		let mut trees = Self::parse_input(reader)?;
 		
+		let (node_labels, edge_labels) = Self::count_labels(&trees);
+		
 		Ok(Database {
 			trees: Vec::new(),
 			node_labels: Vec::new(),
@@ -221,7 +223,8 @@ impl Database {
 		Ok(trees)
 	}
 	
-	fn determine_frequent_labels(trees: &[RawInputGraph]) {
+	fn count_labels(trees: &[RawInputGraph]) -> (HashMap<InputNodeLabel, ProtoDatabaseNodeLabel>,
+		HashMap<(InputNodeLabel, InputEdgeLabel, InputNodeLabel), ProtoDatabaseEdgeLabel>) {
 		let mut node_labels = HashMap::new();
 		let mut edge_labels = HashMap::new();
 		
@@ -245,9 +248,9 @@ impl Database {
 				let node_label1 = tree.nodes[edge.from.0 as usize].label;
 				let node_label2 = tree.nodes[edge.to  .0 as usize].label;
 				let (large, small) = if node_label1.0 > node_label2.0 
-						{ (node_label1.0, node_label2.0) }
+						{ (node_label1, node_label2) }
 					else
-						{ (node_label2.0, node_label1.0) };
+						{ (node_label2, node_label1) };
 				
 				let edge_label = edge_labels.entry((large, edge.label, small))
 				                            .or_insert_with(|| ProtoDatabaseEdgeLabel {
@@ -263,6 +266,8 @@ impl Database {
 				}
 			}
 		}
+		
+		(node_labels, edge_labels)
 	}
 	
 	// Returns the next token from iter. Returns err if there is no token, or a ParseIntError

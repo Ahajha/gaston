@@ -11,6 +11,8 @@ pub struct InputNodeLabel(i16);
 #[derive(std::cmp::PartialEq, Debug)]
 pub struct InputNodeId(i16);
 
+type CombinedInputLabel = (InputNodeLabel, InputEdgeLabel, InputNodeLabel);
+
 pub struct DatabaseTreeEdge {
 	pub edgelabel: types::EdgeLabel,
 	pub tonode: types::NodeId,
@@ -224,7 +226,7 @@ impl Database {
 	}
 	
 	fn count_labels(trees: &[RawInputGraph]) -> (HashMap<InputNodeLabel, ProtoDatabaseNodeLabel>,
-		HashMap<(InputNodeLabel, InputEdgeLabel, InputNodeLabel), ProtoDatabaseEdgeLabel>) {
+		HashMap<CombinedInputLabel, ProtoDatabaseEdgeLabel>) {
 		let mut node_labels = HashMap::new();
 		let mut edge_labels = HashMap::new();
 		

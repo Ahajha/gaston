@@ -52,15 +52,6 @@ pub struct DatabaseNodeLabel {
 	pub frequency: types::Frequency,
 	pub occurrence_count: types::Frequency,
 	pub frequent_edge_labels: Vec<types::EdgeLabel>,
-	last_tid: types::Tid, // Would like to remove, is only used while reading
-}
-
-// Used as an intermediate form before being converted to a DatabaseNodeLabel
-struct ProtoDatabaseNodeLabel {
-	frequency: types::Frequency,
-	occurrence_count: types::Frequency,
-	frequent_edge_labels: Vec<types::EdgeLabel>,
-	last_tid: usize,
 }
 
 pub struct DatabaseEdgeLabel {
@@ -71,14 +62,12 @@ pub struct DatabaseEdgeLabel {
 	pub frequency: types::Frequency,
 	pub occurrence_count: types::Frequency,
 	pub tid_list: tid_list::TidList,
-	last_tid: types::Tid, // similar
 }
 
-// Used as an intermediate form before being converted to a DatabaseEdgeLabel
-struct ProtoDatabaseEdgeLabel {
+// Used as an intermediate form before being converted to either a DatabaseNodeLabel or DatabaseEdge
+struct DatabaseLabelCounts {
 	frequency: types::Frequency,
 	occurrence_count: types::Frequency,
-	tid_list: tid_list::TidList,
 	last_tid: usize,
 }
 
@@ -225,18 +214,17 @@ impl Database {
 		Ok(trees)
 	}
 	
-	fn count_labels(trees: &[RawInputGraph]) -> (HashMap<InputNodeLabel, ProtoDatabaseNodeLabel>,
-		HashMap<CombinedInputLabel, ProtoDatabaseEdgeLabel>) {
+	fn count_labels(trees: &[RawInputGraph]) -> (HashMap<InputNodeLabel, DatabaseLabelCounts>,
+		HashMap<CombinedInputLabel, DatabaseLabelCounts>) {
 		let mut node_labels = HashMap::new();
 		let mut edge_labels = HashMap::new();
 		
 		for (tid, tree) in trees.iter().enumerate() {
 			for node in &tree.nodes {
 				let node_label = node_labels.entry(node.label)
-				                            .or_insert_with(|| ProtoDatabaseNodeLabel {
+				                            .or_insert_with(|| DatabaseLabelCounts {
 					frequency: 0,
 					occurrence_count: 0,
-					frequent_edge_labels: Vec::new(),
 					last_tid: tid,
 				});
 				node_label.occurrence_count += 1;
@@ -255,10 +243,9 @@ impl Database {
 						{ (node_label2, node_label1) };
 				
 				let edge_label = edge_labels.entry((large, edge.label, small))
-				                            .or_insert_with(|| ProtoDatabaseEdgeLabel {
+				                            .or_insert_with(|| DatabaseLabelCounts {
 					frequency: 0,
 					occurrence_count: 0,
-					tid_list: tid_list::TidList::new(),
 					last_tid: tid,
 				});
 				edge_label.occurrence_count += 1;

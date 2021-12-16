@@ -651,6 +651,30 @@ mod tests {
 			(InputNodeLabel(15), DatabaseLabelCounts { frequency: 2, occurrence_count: 2, last_tid: 1 }),
 		]).collect();
 		
+		let expected_edge_labels: HashMap<_,_> = std::array::IntoIter::new([
+			((InputNodeLabel(15), InputEdgeLabel(2), InputNodeLabel(4)),
+				DatabaseLabelCounts { frequency: 2, occurrence_count: 2, last_tid: 1 }),
+			((InputNodeLabel(4), InputEdgeLabel(8), InputNodeLabel(4)),
+				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 1 }),
+			((InputNodeLabel(9), InputEdgeLabel(8), InputNodeLabel(4)),
+				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 1 }),
+			((InputNodeLabel(9), InputEdgeLabel(4), InputNodeLabel(4)),
+				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 1 }),
+			((InputNodeLabel(2), InputEdgeLabel(2), InputNodeLabel(1)),
+				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+			((InputNodeLabel(3), InputEdgeLabel(3), InputNodeLabel(2)),
+				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+			((InputNodeLabel(4), InputEdgeLabel(4), InputNodeLabel(3)),
+				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+			((InputNodeLabel(5), InputEdgeLabel(5), InputNodeLabel(4)),
+				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+			((InputNodeLabel(6), InputEdgeLabel(6), InputNodeLabel(5)),
+				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+			((InputNodeLabel(7), InputEdgeLabel(7), InputNodeLabel(6)),
+				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+		]).collect();
+		
 		assert_eq!(node_labels, expected_node_labels);
+		assert_eq!(edge_labels, expected_edge_labels);
 	}
 }

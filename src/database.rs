@@ -217,7 +217,7 @@ impl Database {
 	
 	fn count_label<K: std::hash::Hash + Eq>(labels: &mut HashMap<K, DatabaseLabelCounts>, key: K, tid: usize) {
 		let label = labels.entry(key).or_insert(DatabaseLabelCounts {
-			frequency: 0,
+			frequency: 1,
 			occurrence_count: 0,
 			last_tid: tid,
 		});

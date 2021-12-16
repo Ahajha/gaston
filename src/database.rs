@@ -214,6 +214,19 @@ impl Database {
 		Ok(trees)
 	}
 	
+	fn count_label<K: std::hash::Hash + Eq>(labels: &mut HashMap<K, DatabaseLabelCounts>, key: K, tid: usize) {
+		let label = labels.entry(key).or_insert(DatabaseLabelCounts {
+			frequency: 0,
+			occurrence_count: 0,
+			last_tid: tid,
+		});
+		label.occurrence_count += 1;
+		if label.last_tid != tid {
+			label.frequency += 1;
+			label.last_tid = tid;
+		}
+	}
+	
 	fn count_labels(trees: &[RawInputGraph]) -> (HashMap<InputNodeLabel, DatabaseLabelCounts>,
 		HashMap<CombinedInputLabel, DatabaseLabelCounts>) {
 		let mut node_labels = HashMap::new();
@@ -221,17 +234,7 @@ impl Database {
 		
 		for (tid, tree) in trees.iter().enumerate() {
 			for node in &tree.nodes {
-				let node_label = node_labels.entry(node.label)
-				                            .or_insert_with(|| DatabaseLabelCounts {
-					frequency: 0,
-					occurrence_count: 0,
-					last_tid: tid,
-				});
-				node_label.occurrence_count += 1;
-				if node_label.last_tid != tid {
-					node_label.frequency += 1;
-					node_label.last_tid = tid;
-				}
+				Self::count_label(&mut node_labels, node.label, tid);
 			}
 			
 			for edge in &tree.edges {
@@ -242,17 +245,7 @@ impl Database {
 					else
 						{ (node_label2, node_label1) };
 				
-				let edge_label = edge_labels.entry((large, edge.label, small))
-				                            .or_insert_with(|| DatabaseLabelCounts {
-					frequency: 0,
-					occurrence_count: 0,
-					last_tid: tid,
-				});
-				edge_label.occurrence_count += 1;
-				if edge_label.last_tid != tid {
-					edge_label.frequency += 1;
-					edge_label.last_tid = tid;
-				}
+				Self::count_label(&mut edge_labels, (large, edge.label, small), tid);
 			}
 		}
 		

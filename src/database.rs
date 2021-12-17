@@ -183,6 +183,17 @@ impl Database {
 
 		Vec::new()
 	}
+
+	fn get_combined_label(edge: &RawInputEdge, tree: &RawInputGraph) -> CombinedInputLabel {
+		let node_label1 = tree.nodes[edge.from.0 as usize].label;
+		let node_label2 = tree.nodes[edge.to  .0 as usize].label;
+		let (large, small) = if node_label1.0 > node_label2.0
+				{ (node_label1, node_label2) }
+			else
+				{ (node_label2, node_label1) };
+		
+		(large, edge.label, small)
+	}
 	
 	fn parse_input<R: std::io::Read>(reader: std::io::BufReader<R>)
 		-> Result<Vec<RawInputGraph>, DatabaseError> {
@@ -252,14 +263,7 @@ impl Database {
 			}
 			
 			for edge in &tree.edges {
-				let node_label1 = tree.nodes[edge.from.0 as usize].label;
-				let node_label2 = tree.nodes[edge.to  .0 as usize].label;
-				let (large, small) = if node_label1.0 > node_label2.0 
-						{ (node_label1, node_label2) }
-					else
-						{ (node_label2, node_label1) };
-				
-				Self::count_label(&mut edge_labels, (large, edge.label, small), tid);
+				Self::count_label(&mut edge_labels, Self::get_combined_label(&edge, &tree), tid);
 			}
 		}
 		

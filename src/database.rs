@@ -64,6 +64,7 @@ struct DatabaseLabelCounts {
 	frequency: types::Frequency,
 	occurrence_count: types::Frequency,
 	last_tid: usize,
+	id: usize,
 }
 
 pub struct Database {
@@ -174,6 +175,11 @@ impl Database {
 		// Erase any infrequent edge labels
 		edge_labels.retain(|_,val| val.frequency >= min_freq);
 		
+		// Give each label a unique ID
+		edge_labels.iter_mut()
+			.enumerate()
+			.for_each(|(id, label)| label.id = id);
+		
 		for (tid, tree) in trees.iter_mut().enumerate() {
 			let nodes = &tree.nodes;
 			tree.edges.retain(|e| edge_labels.contains_key(&Self::get_combined_label(e, nodes)));
@@ -273,6 +279,7 @@ impl Database {
 			frequency: 1,
 			occurrence_count: 0,
 			last_tid: tid,
+			id: 0, // Will be filled in later
 		});
 		label.occurrence_count += 1;
 		if label.last_tid != tid {

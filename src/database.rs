@@ -26,10 +26,10 @@ pub struct DatabaseTreeNode {
 }
 
 impl DatabaseTreeNode {
-	pub fn new(nodelabel: types::NodeLabel , edges: Vec<DatabaseTreeEdge>) -> DatabaseTreeNode {
+	pub fn new(nodelabel: types::NodeLabel) -> DatabaseTreeNode {
 		DatabaseTreeNode {
 			nodelabel,
-			edges,
+			edges: Vec::new(),
 			mark: types::PatternMask(1),
 			startmark: types::PatternMask(1)
 		}
@@ -179,7 +179,7 @@ impl Database {
 		edge_labels: &mut HashMap<CombinedInputLabel, DatabaseLabelCounts>,
 		min_freq: types::Frequency)
 		-> Vec<DatabaseTree> {
-		for tree in trees.iter_mut() {
+		for (tid, tree) in trees.iter_mut().enumerate() {
 			let nodes = &tree.nodes;
 			tree.edges.retain(|e|
 				edge_labels
@@ -187,6 +187,41 @@ impl Database {
 				.unwrap()
 				.frequency >= min_freq
 			);
+			
+			// Index will be None if the node is to be pruned, otherwise will be
+			// index of the new node index.
+			let mut node_id_map: Vec<Option<usize>> = vec![None; nodes.len()];
+
+			// Initialize to a junk non-None value in first pass
+			for edge in &tree.edges {
+				node_id_map[edge.from.0 as usize] = Some(0);
+				node_id_map[edge.to  .0 as usize] = Some(0);
+			}
+
+			// Assign new ids to nodes that are still included
+			let mut new_n_nodes = 0;
+			for node_id in node_id_map.iter_mut() {
+				match node_id {
+					Some(_) => {
+						*node_id = Some(new_n_nodes);
+						new_n_nodes += 1;
+					},
+					_ => ()
+				}
+			}
+
+			// Construct new tree, start with nodes
+			let mut new_tree = DatabaseTree::new(types::Tid(tid as u16));
+			for (node, node_id) in nodes.iter().zip(node_id_map)
+				.filter(|(_,id)| id.is_some()) {
+				// Only add nodes with new indexes (TODO fix label creation)
+				new_tree.nodes.push(DatabaseTreeNode::new(types::NodeLabel(node.label.0 as u8)));
+			}
+
+			// Add the edges. TODO
+			for edge in &tree.edges {
+
+			}
 		}
 
 		Vec::new()

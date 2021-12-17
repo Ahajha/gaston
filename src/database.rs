@@ -194,7 +194,7 @@ impl Database {
 		Self::prune_and_assign_ids(node_labels, min_freq);
 		Self::prune_and_assign_ids(edge_labels, min_freq);
 		
-		for (tid, tree) in trees.iter_mut().enumerate() {
+		trees.iter_mut().enumerate().map(|(tid, tree)| {
 			let nodes = &tree.nodes;
 			tree.edges.retain(|e| edge_labels.contains_key(&Self::get_combined_label(e, nodes)));
 			
@@ -240,9 +240,10 @@ impl Database {
 					tonode: types::NodeId(node_id_map[edge.from.0 as usize].unwrap() as u16)
 				});
 			}
-		}
 
-		Vec::new()
+			new_tree
+		})
+		.collect()
 	}
 
 	fn get_combined_label(edge: &RawInputEdge, nodes: &[RawInputNode]) -> CombinedInputLabel {

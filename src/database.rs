@@ -180,15 +180,21 @@ impl Database {
 		min_freq: types::Frequency)
 		-> Vec<DatabaseTree> {
 		for tree in trees.iter_mut() {
-			tree.edges.retain(|_| true);
+			let nodes = &tree.nodes;
+			tree.edges.retain(|e|
+				edge_labels
+				.get(&Self::get_combined_label(e, nodes))
+				.unwrap()
+				.frequency >= min_freq
+			);
 		}
 
 		Vec::new()
 	}
 
-	fn get_combined_label(edge: &RawInputEdge, tree: &RawInputGraph) -> CombinedInputLabel {
-		let node_label1 = tree.nodes[edge.from.0 as usize].label;
-		let node_label2 = tree.nodes[edge.to  .0 as usize].label;
+	fn get_combined_label(edge: &RawInputEdge, nodes: &[RawInputNode]) -> CombinedInputLabel {
+		let node_label1 = nodes[edge.from.0 as usize].label;
+		let node_label2 = nodes[edge.to  .0 as usize].label;
 		let (large, small) = if node_label1.0 > node_label2.0
 				{ (node_label1, node_label2) }
 			else
@@ -265,7 +271,7 @@ impl Database {
 			}
 			
 			for edge in &tree.edges {
-				Self::count_label(&mut edge_labels, Self::get_combined_label(&edge, &tree), tid);
+				Self::count_label(&mut edge_labels, Self::get_combined_label(&edge, &tree.nodes), tid);
 			}
 		}
 		

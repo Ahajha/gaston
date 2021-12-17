@@ -171,14 +171,12 @@ impl Database {
 		edge_labels: &mut HashMap<CombinedInputLabel, DatabaseLabelCounts>,
 		min_freq: types::Frequency)
 		-> Vec<DatabaseTree> {
+		// Erase any infrequent edge labels
+		edge_labels.retain(|_,val| val.frequency >= min_freq);
+		
 		for (tid, tree) in trees.iter_mut().enumerate() {
 			let nodes = &tree.nodes;
-			tree.edges.retain(|e|
-				edge_labels
-				.get(&Self::get_combined_label(e, nodes))
-				.unwrap()
-				.frequency >= min_freq
-			);
+			tree.edges.retain(|e| edge_labels.contains_key(&Self::get_combined_label(e, nodes)));
 			
 			// Index will be None if the node is to be pruned, otherwise will be
 			// index of the new node index.

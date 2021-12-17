@@ -41,12 +41,6 @@ pub struct DatabaseTree {
 	pub nodes: Vec<DatabaseTreeNode>,
 }
 
-impl DatabaseTree {
-	pub fn new(tid: types::Tid) -> DatabaseTree {
-		DatabaseTree { tid, nodes: Vec::new() }
-	}
-}
-
 pub struct DatabaseNodeLabel {
 	pub input_node_label: InputNodeLabel,
 	pub frequency: types::Frequency,
@@ -209,12 +203,16 @@ impl Database {
 			}
 
 			// Construct new tree, start with nodes
-			let mut new_tree = DatabaseTree::new(types::Tid(tid as u16));
-			for (node, node_id) in nodes.iter().zip(node_id_map)
-				.filter(|(_,id)| id.is_some()) {
-				// Only add nodes with new indexes (TODO fix label creation)
-				new_tree.nodes.push(DatabaseTreeNode::new(types::NodeLabel(node.label.0 as u8)));
-			}
+			let new_tree = DatabaseTree {
+				tid: types::Tid(tid as u16),
+				nodes: nodes.iter()
+					.zip(node_id_map)
+					// Only add nodes with new indexes
+					.filter(|(_,id)| id.is_some())
+					// (TODO fix label creation)
+					.map(|(node,_)| DatabaseTreeNode::new(types::NodeLabel(node.label.0 as u8)))
+					.collect()
+			};
 
 			// Add the edges. TODO
 			for edge in &tree.edges {

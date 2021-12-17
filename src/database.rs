@@ -209,10 +209,10 @@ impl Database {
 				.for_each(|(new_id, node_id)| *node_id = Some(new_id) );
 
 			// Construct new tree, start with nodes
-			let new_tree = DatabaseTree {
+			let mut new_tree = DatabaseTree {
 				tid: types::Tid(tid as u16),
 				nodes: nodes.iter()
-					.zip(node_id_map)
+					.zip(node_id_map.iter())
 					// Only add nodes with new indexes
 					.filter(|(_,id)| id.is_some())
 					// Map InputNodeLabels into NodeLabels
@@ -221,9 +221,18 @@ impl Database {
 					.collect()
 			};
 
-			// Add the edges. TODO
+			// Add the edges
 			for edge in &tree.edges {
-
+				let edgelabel = types::EdgeLabel(edge_labels.get(&Self::get_combined_label(edge, nodes))
+					.unwrap().id as u8);
+				new_tree.nodes[edge.from.0 as usize].edges.push(DatabaseTreeEdge {
+					edgelabel,
+					tonode: types::NodeId(node_id_map[edge.to.0 as usize].unwrap() as u16)
+				});
+				new_tree.nodes[edge.to.0 as usize].edges.push(DatabaseTreeEdge {
+					edgelabel,
+					tonode: types::NodeId(node_id_map[edge.from.0 as usize].unwrap() as u16)
+				});
 			}
 		}
 

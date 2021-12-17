@@ -1,3 +1,4 @@
+#[derive(Copy, Clone)]
 pub struct EdgeLabel(pub u8);
 pub struct NodeLabel(pub u8);
 pub struct NodeId(pub u16);

@@ -161,8 +161,7 @@ impl Database {
 		
 		let (mut node_labels, mut edge_labels) = Self::count_labels(&trees);
 
-		let trees = Self::prune_infrequent_nodes_and_edges(trees,
-			&mut node_labels, &mut edge_labels, min_freq);
+		let trees = Self::prune_infrequent_nodes_and_edges(trees, &mut edge_labels, min_freq);
 		
 		Ok(Database {
 			trees,
@@ -175,7 +174,6 @@ impl Database {
 	}
 
 	fn prune_infrequent_nodes_and_edges(mut trees: Vec<RawInputGraph>,
-		node_labels: &mut HashMap<InputNodeLabel, DatabaseLabelCounts>,
 		edge_labels: &mut HashMap<CombinedInputLabel, DatabaseLabelCounts>,
 		min_freq: types::Frequency)
 		-> Vec<DatabaseTree> {

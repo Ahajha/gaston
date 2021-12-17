@@ -156,7 +156,8 @@ impl Database {
 		
 		let (mut node_labels, mut edge_labels) = Self::count_labels(&trees);
 
-		let trees = Self::prune_infrequent_nodes_and_edges(trees, &mut edge_labels, min_freq);
+		let trees = Self::prune_infrequent_nodes_and_edges(trees, &mut node_labels,
+			&mut edge_labels, min_freq);
 		
 		Ok(Database {
 			trees,
@@ -168,17 +169,24 @@ impl Database {
 		})
 	}
 
+	fn prune_and_assign_ids<K: std::hash::Hash + Eq>(labels: &mut HashMap<K, DatabaseLabelCounts>,
+		min_freq: types::Frequency) {
+		// Erase any infrequent labels
+		labels.retain(|_,val| val.frequency >= min_freq);
+		
+		// Assign each label a unique ID
+		labels.iter_mut()
+			.enumerate()
+			.for_each(|(id, (_, label))| label.id = id);
+	}
+
 	fn prune_infrequent_nodes_and_edges(mut trees: Vec<RawInputGraph>,
+		node_labels: &mut HashMap<InputNodeLabel, DatabaseLabelCounts>,
 		edge_labels: &mut HashMap<CombinedInputLabel, DatabaseLabelCounts>,
 		min_freq: types::Frequency)
 		-> Vec<DatabaseTree> {
-		// Erase any infrequent edge labels
-		edge_labels.retain(|_,val| val.frequency >= min_freq);
-		
-		// Give each label a unique ID
-		edge_labels.iter_mut()
-			.enumerate()
-			.for_each(|(id, label)| label.id = id);
+		Self::prune_and_assign_ids(node_labels, min_freq);
+		Self::prune_and_assign_ids(edge_labels, min_freq);
 		
 		for (tid, tree) in trees.iter_mut().enumerate() {
 			let nodes = &tree.nodes;

@@ -157,18 +157,31 @@ impl Database {
 	pub fn read(filename: &str) -> Result<Database, DatabaseError> {
 		let reader = std::io::BufReader::new(std::fs::File::open(filename)?);
 		
-		let mut trees = Self::parse_input(reader)?;
+		let trees = Self::parse_input(reader)?;
 		
-		let (node_labels, edge_labels) = Self::count_labels(&trees);
+		let (mut node_labels, mut edge_labels) = Self::count_labels(&trees);
+
+		let trees = Self::prune_infrequent_nodes_and_edges(trees, &mut node_labels, &mut edge_labels);
 		
 		Ok(Database {
-			trees: Vec::new(),
+			trees,
 			node_labels: Vec::new(),
 			edge_labels: Vec::new(),
 			largest_n_nodes: 0,
 			largest_n_edges: 0,
 			edge_labels_indexes: Vec::new(),
 		})
+	}
+
+	fn prune_infrequent_nodes_and_edges(mut trees: Vec<RawInputGraph>,
+		node_labels: &mut HashMap<InputNodeLabel, DatabaseLabelCounts>,
+		edge_labels: &mut HashMap<CombinedInputLabel, DatabaseLabelCounts>)
+		-> Vec<DatabaseTree> {
+		for tree in trees.iter_mut() {
+			tree.edges.retain(|_| true);
+		}
+
+		Vec::new()
 	}
 	
 	fn parse_input<R: std::io::Read>(reader: std::io::BufReader<R>)

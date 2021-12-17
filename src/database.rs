@@ -180,7 +180,7 @@ impl Database {
 			
 			// Index will be None if the node is to be pruned, otherwise will be
 			// index of the new node index.
-			let mut node_id_map: Vec<Option<usize>> = vec![None; nodes.len()];
+			let mut node_id_map = vec![None; nodes.len()];
 
 			// Initialize to a junk non-None value in first pass
 			for edge in &tree.edges {
@@ -189,16 +189,10 @@ impl Database {
 			}
 
 			// Assign new ids to nodes that are still included
-			let mut new_n_nodes = 0;
-			for node_id in node_id_map.iter_mut() {
-				match node_id {
-					Some(_) => {
-						*node_id = Some(new_n_nodes);
-						new_n_nodes += 1;
-					},
-					_ => ()
-				}
-			}
+			node_id_map.iter_mut()
+				.filter(|id| id.is_some())
+				.enumerate()
+				.for_each(|(new_id, node_id)| *node_id = Some(new_id) );
 
 			// Construct new tree, start with nodes
 			let new_tree = DatabaseTree {

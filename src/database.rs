@@ -215,8 +215,9 @@ impl Database {
 					.zip(node_id_map)
 					// Only add nodes with new indexes
 					.filter(|(_,id)| id.is_some())
-					// (TODO fix label creation)
-					.map(|(node,_)| DatabaseTreeNode::new(types::NodeLabel(node.label.0 as u8)))
+					// Map InputNodeLabels into NodeLabels
+					.map(|(node,_)| DatabaseTreeNode::new(
+						types::NodeLabel(node_labels.get(&node.label).unwrap().id as u8)))
 					.collect()
 			};
 

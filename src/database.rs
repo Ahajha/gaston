@@ -67,6 +67,12 @@ struct DatabaseLabelCounts {
 	id: usize,
 }
 
+impl DatabaseLabelCounts {
+	fn new(frequency: types::Frequency, occurrence_count: types::Frequency, last_tid: usize) -> Self {
+		Self { frequency, occurrence_count, last_tid, id: 0 }
+	}
+}
+
 pub struct Database {
 	pub trees: Vec<DatabaseTree>,
 	pub node_labels: Vec<DatabaseNodeLabel>,
@@ -293,12 +299,7 @@ impl Database {
 	}
 	
 	fn count_label<K: std::hash::Hash + Eq>(labels: &mut HashMap<K, DatabaseLabelCounts>, key: K, tid: usize) {
-		let label = labels.entry(key).or_insert(DatabaseLabelCounts {
-			frequency: 1,
-			occurrence_count: 0,
-			last_tid: tid,
-			id: 0, // Will be filled in later
-		});
+		let label = labels.entry(key).or_insert(DatabaseLabelCounts::new(1, 0, tid));
 		label.occurrence_count += 1;
 		if label.last_tid != tid {
 			label.frequency += 1;
@@ -711,38 +712,38 @@ mod tests {
 		let (node_labels, edge_labels) = Database::count_labels(&trees);
 		
 		let expected_node_labels: HashMap<_,_> = std::array::IntoIter::new([
-			(InputNodeLabel(1), DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
-			(InputNodeLabel(2), DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
-			(InputNodeLabel(3), DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
-			(InputNodeLabel(4), DatabaseLabelCounts { frequency: 3, occurrence_count: 4, last_tid: 2 }),
-			(InputNodeLabel(5), DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
-			(InputNodeLabel(6), DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
-			(InputNodeLabel(7), DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
-			(InputNodeLabel(9), DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 1 }),
-			(InputNodeLabel(15), DatabaseLabelCounts { frequency: 2, occurrence_count: 2, last_tid: 1 }),
+			(InputNodeLabel(1), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(2), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(3), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(4), DatabaseLabelCounts::new(3, 4, 2)),
+			(InputNodeLabel(5), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(6), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(7), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(9), DatabaseLabelCounts::new(1, 1, 1)),
+			(InputNodeLabel(15), DatabaseLabelCounts::new(2, 2, 1)),
 		]).collect();
 		
 		let expected_edge_labels: HashMap<_,_> = std::array::IntoIter::new([
 			((InputNodeLabel(15), InputEdgeLabel(2), InputNodeLabel(4)),
-				DatabaseLabelCounts { frequency: 2, occurrence_count: 2, last_tid: 1 }),
+				DatabaseLabelCounts::new(2, 2, 1)),
 			((InputNodeLabel(4), InputEdgeLabel(8), InputNodeLabel(4)),
-				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 1 }),
+				DatabaseLabelCounts::new(1, 1, 1)),
 			((InputNodeLabel(9), InputEdgeLabel(8), InputNodeLabel(4)),
-				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 1 }),
+				DatabaseLabelCounts::new(1, 1, 1)),
 			((InputNodeLabel(9), InputEdgeLabel(4), InputNodeLabel(4)),
-				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 1 }),
+				DatabaseLabelCounts::new(1, 1, 1)),
 			((InputNodeLabel(2), InputEdgeLabel(2), InputNodeLabel(1)),
-				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+				DatabaseLabelCounts::new(1, 1, 2)),
 			((InputNodeLabel(3), InputEdgeLabel(3), InputNodeLabel(2)),
-				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+				DatabaseLabelCounts::new(1, 1, 2)),
 			((InputNodeLabel(4), InputEdgeLabel(4), InputNodeLabel(3)),
-				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+				DatabaseLabelCounts::new(1, 1, 2)),
 			((InputNodeLabel(5), InputEdgeLabel(5), InputNodeLabel(4)),
-				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+				DatabaseLabelCounts::new(1, 1, 2)),
 			((InputNodeLabel(6), InputEdgeLabel(6), InputNodeLabel(5)),
-				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+				DatabaseLabelCounts::new(1, 1, 2)),
 			((InputNodeLabel(7), InputEdgeLabel(7), InputNodeLabel(6)),
-				DatabaseLabelCounts { frequency: 1, occurrence_count: 1, last_tid: 2 }),
+				DatabaseLabelCounts::new(1, 1, 2)),
 		]).collect();
 		
 		assert_eq!(node_labels, expected_node_labels);

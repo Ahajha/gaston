@@ -5,5 +5,5 @@ mod database;
 fn main() {
     println!("Hello, world!");
     
-    let db = database::Database::read("");
+    let _db = database::Database::read("", 0);
 }

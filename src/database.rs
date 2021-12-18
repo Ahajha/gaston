@@ -59,7 +59,7 @@ pub struct DatabaseEdgeLabel {
 }
 
 // Used as an intermediate form before being converted to either a DatabaseNodeLabel or DatabaseEdge
-#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug, Clone)]
 struct DatabaseLabelCounts {
 	frequency: types::Frequency,
 	occurrence_count: types::Frequency,
@@ -749,5 +749,43 @@ mod tests {
 		
 		assert_eq!(node_labels, expected_node_labels);
 		assert_eq!(edge_labels, expected_edge_labels);
+	}
+
+	#[test]
+	fn test_prune_and_assign_ids() {
+		let expected_node_labels: HashMap<_,_> = std::array::IntoIter::new([
+			(InputNodeLabel(1), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(2), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(3), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(4), DatabaseLabelCounts::new(3, 4, 2)),
+			(InputNodeLabel(5), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(6), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(7), DatabaseLabelCounts::new(1, 1, 2)),
+			(InputNodeLabel(9), DatabaseLabelCounts::new(1, 1, 1)),
+			(InputNodeLabel(15), DatabaseLabelCounts::new(2, 2, 1)),
+		]).collect();
+		
+		let mut copy = expected_node_labels.clone();
+		// Removing no elements should only assign ids
+		Database::prune_and_assign_ids(&mut copy, 0);
+		
+		assert_eq!(expected_node_labels.len(), copy.len());
+		for id in 0..copy.len() {
+			assert!(copy.iter().any(|(_, label)| label.id == id));
+		}
+
+		let mut copy = expected_node_labels.clone();
+		Database::prune_and_assign_ids(&mut copy, 2);
+		
+		assert_eq!(copy.len(), 2);
+		for id in 0..copy.len() {
+			assert!(copy.iter().any(|(_, label)| label.id == id));
+		}
+		assert!(copy.contains_key(&InputNodeLabel(4)));
+		assert!(copy.contains_key(&InputNodeLabel(15)));
+
+		let mut copy = expected_node_labels.clone();
+		Database::prune_and_assign_ids(&mut copy, 4);
+		assert!(copy.is_empty());
 	}
 }

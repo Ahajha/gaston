@@ -262,7 +262,7 @@ impl Database {
 		-> Result<Vec<RawInputGraph>, DatabaseError> {
 		let mut trees = Vec::new();
 		
-		for (line_no, line) in reader.lines().enumerate().map(|(n,l)| (n+1,l)) {
+		for (line, line_no) in reader.lines().zip(1..) {
 			match Self::read_command((line_no, &line?))? {
 				Some(Command::Graph(tid)) => {
 					if tid.0 as usize != trees.len() {

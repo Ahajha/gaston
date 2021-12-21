@@ -168,7 +168,7 @@ impl Database {
 		Self::prune_and_assign_ids(&mut node_labels, min_freq);
 		Self::prune_and_assign_ids(&mut edge_labels, min_freq);
 
-		let trees = Self::prune_infrequent_nodes_and_edges(trees, &node_labels, &edge_labels, min_freq);
+		let trees = Self::prune_infrequent_nodes_and_edges(trees, &node_labels, &edge_labels);
 		
 		Ok(Database {
 			trees,
@@ -193,8 +193,7 @@ impl Database {
 
 	fn prune_infrequent_nodes_and_edges(mut trees: Vec<RawInputGraph>,
 		node_labels: &HashMap<InputNodeLabel, DatabaseLabelCounts>,
-		edge_labels: &HashMap<CombinedInputLabel, DatabaseLabelCounts>,
-		min_freq: types::Frequency)
+		edge_labels: &HashMap<CombinedInputLabel, DatabaseLabelCounts>)
 		-> Vec<DatabaseTree> {
 		
 		trees.iter_mut().enumerate().map(|(tid, tree)| {
@@ -830,7 +829,7 @@ mod tests {
 		Database::prune_and_assign_ids(&mut node_labels, 2);
 		Database::prune_and_assign_ids(&mut edge_labels, 2);
 
-		let result = Database::prune_infrequent_nodes_and_edges(trees, &node_labels, &edge_labels, 2);
+		let result = Database::prune_infrequent_nodes_and_edges(trees, &node_labels, &edge_labels);
 		
 		// (Note there is only one frequent edge label here, it must have ID 0)
 		assert_eq!(result, vec![

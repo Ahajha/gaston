@@ -1,11 +1,14 @@
-#[derive(Copy, Clone)]
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug, Copy, Clone)]
 pub struct EdgeLabel(pub u8);
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct NodeLabel(pub u8);
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct NodeId(pub u16);
 pub struct Depth(pub u32);
-#[derive(std::cmp::PartialEq, Debug)]
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct Tid(pub u16);
 pub type Frequency = u32;
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct PatternMask(pub u32);
 
 pub const NO_TID: Tid = Tid(u16::MAX);

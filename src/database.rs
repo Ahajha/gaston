@@ -13,11 +13,13 @@ pub struct InputNodeId(i16);
 
 type CombinedInputLabel = (InputNodeLabel, InputEdgeLabel, InputNodeLabel);
 
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct DatabaseTreeEdge {
 	pub edgelabel: types::EdgeLabel,
 	pub tonode: types::NodeId,
 }
 
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct DatabaseTreeNode {
 	pub nodelabel: types::NodeLabel,
 	pub edges: Vec<DatabaseTreeEdge>,
@@ -36,6 +38,7 @@ impl DatabaseTreeNode {
 	}
 }
 
+#[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct DatabaseTree {
 	pub tid: types::Tid,
 	pub nodes: Vec<DatabaseTreeNode>,
@@ -787,5 +790,112 @@ mod tests {
 		let mut copy = expected_node_labels.clone();
 		Database::prune_and_assign_ids(&mut copy, 4);
 		assert!(copy.is_empty());
+	}
+	
+	#[test]
+	fn test_infrequent_label_pruning() {
+		use std::io::BufReader;
+		
+		let s = "t # 0\n\
+		         v 0 15\n\
+		         v 1 4\n
+		         e 1 0 2\n\
+		         t # 1\n\
+		         v 0 4\n\
+		         v 1 15\n\
+		         v 2 9\n\
+		         v 3 4\n\
+		         e 3 0 8\n\
+		         e 2 3 8\n\
+		         e 0 1 2\n\
+		         e 0 2 4\n\
+		         t # 2\n\
+		         v 0 1\n\
+		         v 1 2\n\
+		         v 2 3\n\
+		         v 3 4\n\
+		         v 4 5\n\
+		         v 5 6\n\
+		         v 6 7\n\
+		         e 0 1 2\n\
+		         e 1 2 3\n\
+		         e 2 3 4\n\
+		         e 3 4 5\n\
+		         e 4 5 6\n\
+		         e 5 6 7\n";
+		let trees = Database::parse_input(BufReader::new(s.as_bytes())).unwrap();
+		
+		let (mut node_labels, mut edge_labels) = Database::count_labels(&trees);
+
+		Database::prune_and_assign_ids(&mut node_labels, 2);
+		Database::prune_and_assign_ids(&mut edge_labels, 2);
+
+		let result = Database::prune_infrequent_nodes_and_edges(trees, &node_labels, &edge_labels, 2);
+		
+		// (Note there is only one frequent edge label here, it must have ID 0)
+		assert_eq!(result, vec![
+			DatabaseTree {
+				tid: types::Tid(0),
+				nodes: vec![
+					DatabaseTreeNode {
+						nodelabel: types::NodeLabel(
+							node_labels.get(&InputNodeLabel(15)).unwrap().id as u8),
+						edges: vec![
+							DatabaseTreeEdge {
+								edgelabel: types::EdgeLabel(0),
+								tonode: types::NodeId(1),
+							}
+						],
+						mark: types::PatternMask(1),
+						startmark: types::PatternMask(1),
+					},
+					DatabaseTreeNode {
+						nodelabel: types::NodeLabel(
+							node_labels.get(&InputNodeLabel(4)).unwrap().id as u8),
+						edges: vec![
+							DatabaseTreeEdge {
+								edgelabel: types::EdgeLabel(0),
+								tonode: types::NodeId(0),
+							}
+						],
+						mark: types::PatternMask(1),
+						startmark: types::PatternMask(1),
+					},
+				],
+			},
+			DatabaseTree {
+				tid: types::Tid(1),
+				nodes: vec![
+					DatabaseTreeNode {
+						nodelabel: types::NodeLabel(
+							node_labels.get(&InputNodeLabel(4)).unwrap().id as u8),
+						edges: vec![
+							DatabaseTreeEdge {
+								edgelabel: types::EdgeLabel(0),
+								tonode: types::NodeId(1),
+							}
+						],
+						mark: types::PatternMask(1),
+						startmark: types::PatternMask(1),
+					},
+					DatabaseTreeNode {
+						nodelabel: types::NodeLabel(
+							node_labels.get(&InputNodeLabel(15)).unwrap().id as u8),
+						edges: vec![
+							DatabaseTreeEdge {
+								edgelabel: types::EdgeLabel(0),
+								tonode: types::NodeId(0),
+							}
+						],
+						mark: types::PatternMask(1),
+						startmark: types::PatternMask(1),
+					},
+				],
+			},
+			DatabaseTree {
+				tid: types::Tid(2),
+				nodes: Vec::new(),
+			}
+		]);
 	}
 }

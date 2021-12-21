@@ -548,6 +548,35 @@ mod tests {
 		));
 	}
 	
+	const TEST_INPUT_STRING: &str =
+		"t # 0\n\
+		 v 0 15\n\
+		 v 1 4\n
+		 e 1 0 2\n\
+		 t # 1\n\
+		 v 0 4\n\
+		 v 1 15\n\
+		 v 2 9\n\
+		 v 3 4\n\
+		 e 3 0 8\n\
+		 e 2 3 8\n\
+		 e 0 1 2\n\
+		 e 0 2 4\n\
+		 t # 2\n\
+		 v 0 1\n\
+		 v 1 2\n\
+		 v 2 3\n\
+		 v 3 4\n\
+		 v 4 5\n\
+		 v 5 6\n\
+		 v 6 7\n\
+		 e 0 1 2\n\
+		 e 1 2 3\n\
+		 e 2 3 4\n\
+		 e 3 4 5\n\
+		 e 4 5 6\n\
+		 e 5 6 7\n";
+	
 	#[test]
 	fn test_parse_input() {
 		use std::io::BufReader;
@@ -584,33 +613,7 @@ mod tests {
 			},
 		]);
 		
-		let s = "t # 0\n\
-		         v 0 15\n\
-		         v 1 4\n
-		         e 1 0 2\n\
-		         t # 1\n\
-		         v 0 4\n\
-		         v 1 15\n\
-		         v 2 9\n\
-		         v 3 4\n\
-		         e 3 0 8\n\
-		         e 2 3 8\n\
-		         e 0 1 2\n\
-		         e 0 2 4\n\
-		         t # 2\n\
-		         v 0 1\n\
-		         v 1 2\n\
-		         v 2 3\n\
-		         v 3 4\n\
-		         v 4 5\n\
-		         v 5 6\n\
-		         v 6 7\n\
-		         e 0 1 2\n\
-		         e 1 2 3\n\
-		         e 2 3 4\n\
-		         e 3 4 5\n\
-		         e 4 5 6\n\
-		         e 5 6 7\n";
+		let s = TEST_INPUT_STRING;
 		let result = Database::parse_input(BufReader::new(s.as_bytes())).unwrap();
 		assert_eq!(result, vec![
 			RawInputGraph {
@@ -684,33 +687,7 @@ mod tests {
 	fn test_count_labels() {
 		use std::io::BufReader;
 		
-		let s = "t # 0\n\
-		         v 0 15\n\
-		         v 1 4\n
-		         e 1 0 2\n\
-		         t # 1\n\
-		         v 0 4\n\
-		         v 1 15\n\
-		         v 2 9\n\
-		         v 3 4\n\
-		         e 3 0 8\n\
-		         e 2 3 8\n\
-		         e 0 1 2\n\
-		         e 0 2 4\n\
-		         t # 2\n\
-		         v 0 1\n\
-		         v 1 2\n\
-		         v 2 3\n\
-		         v 3 4\n\
-		         v 4 5\n\
-		         v 5 6\n\
-		         v 6 7\n\
-		         e 0 1 2\n\
-		         e 1 2 3\n\
-		         e 2 3 4\n\
-		         e 3 4 5\n\
-		         e 4 5 6\n\
-		         e 5 6 7\n";
+		let s = TEST_INPUT_STRING;
 		let trees = Database::parse_input(BufReader::new(s.as_bytes())).unwrap();
 		let (node_labels, edge_labels) = Database::count_labels(&trees);
 		
@@ -795,33 +772,7 @@ mod tests {
 	fn test_infrequent_label_pruning() {
 		use std::io::BufReader;
 		
-		let s = "t # 0\n\
-		         v 0 15\n\
-		         v 1 4\n
-		         e 1 0 2\n\
-		         t # 1\n\
-		         v 0 4\n\
-		         v 1 15\n\
-		         v 2 9\n\
-		         v 3 4\n\
-		         e 3 0 8\n\
-		         e 2 3 8\n\
-		         e 0 1 2\n\
-		         e 0 2 4\n\
-		         t # 2\n\
-		         v 0 1\n\
-		         v 1 2\n\
-		         v 2 3\n\
-		         v 3 4\n\
-		         v 4 5\n\
-		         v 5 6\n\
-		         v 6 7\n\
-		         e 0 1 2\n\
-		         e 1 2 3\n\
-		         e 2 3 4\n\
-		         e 3 4 5\n\
-		         e 4 5 6\n\
-		         e 5 6 7\n";
+		let s = TEST_INPUT_STRING;
 		let trees = Database::parse_input(BufReader::new(s.as_bytes())).unwrap();
 		
 		let (mut node_labels, mut edge_labels) = Database::count_labels(&trees);

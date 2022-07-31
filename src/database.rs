@@ -4,53 +4,64 @@ use crate::tid_list;
 use std::io::BufRead;
 use std::collections::HashMap;
 
+// Raw input edge label (?)
 #[derive(std::cmp::PartialEq, std::cmp::Eq, Hash, Copy, Clone, Debug)]
 pub struct InputEdgeLabel(i16);
+
+// Raw input node label (?)
 #[derive(std::cmp::PartialEq, std::cmp::Eq, Hash, Copy, Clone, Debug)]
 pub struct InputNodeLabel(i16);
+
+// Not sure, something to do with raw input IDs, since they may change later?
 #[derive(std::cmp::PartialEq, Debug)]
 pub struct InputNodeId(i16);
 
-type CombinedInputLabel = (InputNodeLabel, InputEdgeLabel, InputNodeLabel);
+/* pub? */ type CombinedInputLabel = (InputNodeLabel, InputEdgeLabel, InputNodeLabel);
 
+// An edge in an input graph. Labels are normalized into [0, EdgeLabel::MAX], the original values can be looked up in the respective DatabaseEdgeLabel.
 #[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct DatabaseTreeEdge {
 	pub edgelabel: types::EdgeLabel,
 	pub tonode: types::NodeId,
 }
 
+// A node in an input graph. Labels are normalized into [0, NodeLabel::MAX], the original values can be looked up in the respective DatabaseNodeLabel.
 #[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct DatabaseTreeNode {
 	pub nodelabel: types::NodeLabel,
-	pub edges: Vec<DatabaseTreeEdge>,
-	pub mark: types::PatternMask, // Might not want these two here
-	pub startmark: types::PatternMask,
+	pub edges: Vec<DatabaseTreeEdge>, // TODO Box/slices
+	//pub mark: types::PatternMask, // Might not want these two here
+	//pub startmark: types::PatternMask,
 }
 
 impl DatabaseTreeNode {
 	pub fn new(nodelabel: types::NodeLabel) -> DatabaseTreeNode {
-		DatabaseTreeNode {
+		Self {
 			nodelabel,
 			edges: Vec::new(),
-			mark: types::PatternMask(1),
-			startmark: types::PatternMask(1)
+			//mark: types::PatternMask(1),
+			//startmark: types::PatternMask(1)
 		}
 	}
 }
 
+// A single input graph
 #[derive(std::cmp::PartialEq, std::cmp::Eq, Debug)]
 pub struct DatabaseTree {
 	pub tid: types::Tid,
 	pub nodes: Vec<DatabaseTreeNode>,
 }
 
+#[derive(Debug)]
 pub struct DatabaseNodeLabel {
 	pub input_node_label: InputNodeLabel,
 	pub frequency: types::Frequency,
 	pub occurrence_count: types::Frequency,
+	// List of edge labels that frequently occur with this node label. Useful for determining frequent 1-edge graphs within this database.
 	pub frequent_edge_labels: Vec<types::EdgeLabel>,
 }
 
+#[derive(Debug)]
 pub struct DatabaseEdgeLabel {
 	pub input_edge_label: InputEdgeLabel,
 	pub to_node_label: types::NodeLabel,
@@ -64,24 +75,30 @@ pub struct DatabaseEdgeLabel {
 // Used as an intermediate form before being converted to either a DatabaseNodeLabel or DatabaseEdge
 #[derive(std::cmp::PartialEq, std::cmp::Eq, Debug, Clone)]
 struct DatabaseLabelCounts {
+	// Number of unique graphs this label occurs in
 	frequency: types::Frequency,
+	// Total number of occurences of this label
 	occurrence_count: types::Frequency,
+	// Last tid this label is seen in
 	last_tid: usize,
+	// ID of this label
 	id: usize,
 }
 
 impl DatabaseLabelCounts {
+	// Constructs a DatabaseLabelCounts with given frequency, occurrence count, and last tid. ID is set to 0 initially.
 	fn new(frequency: types::Frequency, occurrence_count: types::Frequency, last_tid: usize) -> Self {
 		Self { frequency, occurrence_count, last_tid, id: 0 }
 	}
 }
 
+#[derive(Debug)]
 pub struct Database {
 	pub trees: Vec<DatabaseTree>,
 	pub node_labels: Vec<DatabaseNodeLabel>,
 	pub edge_labels: Vec<DatabaseEdgeLabel>,
-	pub largest_n_nodes: u32,
-	pub largest_n_edges: u32,
+	//pub largest_n_nodes: u32, // Needed?
+	//pub largest_n_edges: u32, // Needed?
 	pub edge_labels_indexes: Vec<types::EdgeLabel>,
 }
 
@@ -170,14 +187,43 @@ impl Database {
 
 		let trees = Self::prune_infrequent_nodes_and_edges(trees, &node_labels, &edge_labels);
 		
-		Ok(Database {
+		let (node_labels, edge_labels) = Self::finalize_labels(node_labels, edge_labels);
+
+		Ok(Self {
 			trees,
-			node_labels: Vec::new(),
-			edge_labels: Vec::new(),
-			largest_n_nodes: 0,
-			largest_n_edges: 0,
-			edge_labels_indexes: Vec::new(),
+			node_labels,
+			edge_labels,
+			//largest_n_nodes: 0, // Needed?
+			//largest_n_edges: 0, // Needed?
+			edge_labels_indexes: todo!(),
 		})
+	}
+
+	// Convert intermediate label formats into final form
+	fn finalize_labels(input_node_labels: HashMap<InputNodeLabel, DatabaseLabelCounts>, input_edge_labels: HashMap<CombinedInputLabel, DatabaseLabelCounts>) -> (Vec<DatabaseNodeLabel>, Vec<DatabaseEdgeLabel>) {
+		let edge_labels = input_edge_labels.into_iter().map(|(label, counts)| {
+			let (from_node_label, input_edge_label, to_node_label) = label;
+			DatabaseEdgeLabel {
+				input_edge_label,
+				to_node_label: types::NodeLabel(input_node_labels.get(&to_node_label).expect("Input node labels should contain {to_node_label}").id as u8),
+				from_node_label: types::NodeLabel(input_node_labels.get(&from_node_label).expect("Input node labels should contain {from_node_label}").id as u8),
+				edge_label: todo!(),
+				frequency: counts.frequency,
+				occurrence_count: counts.occurrence_count,
+				tid_list: todo!(),
+			}
+		}).collect();
+
+		let mut node_labels = input_node_labels.into_iter().map(|(label, counts)|
+			DatabaseNodeLabel {
+				input_node_label: label,
+				frequency: counts.frequency,
+				occurrence_count: counts.occurrence_count,
+				frequent_edge_labels: todo!(), // To be filled in later
+			}
+		).collect();
+
+		(node_labels, edge_labels)
 	}
 
 	fn prune_and_assign_ids<K: std::hash::Hash + Eq>(labels: &mut HashMap<K, DatabaseLabelCounts>,

@@ -5,5 +5,10 @@ mod database;
 fn main() {
     println!("Hello, world!");
     
-    let _db = database::Database::read("", 0);
+    let db = database::Database::read("", 0);
+
+    match db {
+        Ok(db) => println!("{:?}", db),
+        Err(err) => println!("{}", err),
+    };
 }

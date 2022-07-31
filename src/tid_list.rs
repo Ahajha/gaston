@@ -1,5 +1,6 @@
 use crate::types;
 
+#[derive(Debug)]
 pub struct TidList {
 	tids: Vec<types::Tid>
 }
